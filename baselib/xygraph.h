@@ -762,7 +762,7 @@ int traceType[XYGC_K_MAX_TRACES]; // XYGC_K_TRACE_XY or XYGC_K_TRACE_CHRONOLOGIC
 int plotState[XYGC_K_MAX_TRACES];
 
 int yPvDim[XYGC_K_MAX_TRACES], xPvDim[XYGC_K_MAX_TRACES],
- traceSize[XYGC_K_MAX_TRACES];
+ traceSize[XYGC_K_MAX_TRACES], traceSizeLimit[XYGC_K_MAX_TRACES];
 
 typedef struct plotInfoTag {
   int n;

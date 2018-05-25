@@ -1794,7 +1794,7 @@ int ctl;
 
       case XYGC_K_TRACE_XY:
 
-        if ( xyo->forceVector[i] || ( xyo->xPvCount[i] > 1 ) ) { // vector
+        if ( xyo->forceVector[i] || ( xyo->xPvDim[i] > 1 ) ) { // vector
 
           xyo->yArrayNeedUpdate[i] = xyo->xArrayNeedUpdate[i] = 1;
           xyo->needVectorUpdate = 1;
@@ -2008,7 +2008,7 @@ int ctl;
 
       case XYGC_K_TRACE_CHRONOLOGICAL:
 
-        if ( xyo->forceVector[i] || ( xyo->yPvCount[i] > 1 ) ) { // vector
+        if ( xyo->forceVector[i] || ( xyo->yPvDim[i] > 1 ) ) { // vector
 
           xyo->yArrayNeedUpdate[i] = xyo->xArrayNeedUpdate[i] = 1;
           xyo->needVectorUpdate = 1;
@@ -2195,7 +2195,7 @@ int ctl;
 
   case XYGC_K_TRACE_XY:
 
-    if ( xyo->forceVector[i] || ( xyo->xPvCount[i] > 1 ) ) { // vector
+    if ( xyo->forceVector[i] || ( xyo->xPvDim[i] > 1 ) ) { // vector
 
       for ( ii=0; ii<xyo->xPvCount[i]; ii++ ) {
 
@@ -2327,6 +2327,12 @@ int ctl;
       }
 
       xyo->xArrayGotValue[i] = 1;
+      if (xyo->traceSize[i] != ((xyo->traceSizeLimit[i] > 0 && pv->get_current_dimension()>xyo->traceSizeLimit[i])?xyo->traceSizeLimit[i]:pv->get_current_dimension()))
+      {
+          xyo->traceSize[i] = (int) pv->get_current_dimension();
+          xyo->needArraySizeChange = 1;
+          xyo->actWin->addDefExeNode( xyo->aglPtr );
+      }
 
       if ( xyo->plotUpdateMode[i] != XYGC_K_UPDATE_ON_TRIG ) {
 
@@ -2677,7 +2683,8 @@ int i =  ptr->index;
   if ( pv->is_valid() ) {
 
     xyo->actWin->appCtx->proc->lock();
-    xyo->traceSize[i] = (int) pv->get_int();
+    xyo->traceSizeLimit[i] = (int) pv->get_int();
+    if (xyo->traceSizeLimit[i] > 0 &&  xyo->traceSizeLimit[i] < xyo->traceSize[i]) xyo->traceSize[i] = xyo->traceSizeLimit[i];
     xyo->needArraySizeChange = 1;
     xyo->actWin->addDefExeNode( xyo->aglPtr );
     xyo->actWin->appCtx->proc->unlock();
@@ -2757,7 +2764,7 @@ int ctl;
 
   case XYGC_K_TRACE_XY:
 
-    if ( xyo->forceVector[i] || ( xyo->yPvCount[i] > 1 ) ) { // vector
+    if ( xyo->forceVector[i] || ( xyo->yPvDim[i] > 1 ) ) { // vector
 
       for ( ii=0; ii<xyo->yPvCount[i]; ii++ ) {
 
@@ -2890,6 +2897,12 @@ int ctl;
 
       xyo->yArrayGotValue[i] = 1;
 
+      if (xyo->traceSize[i] != ((xyo->traceSizeLimit[i] > 0 && pv->get_current_dimension()>xyo->traceSizeLimit[i])?xyo->traceSizeLimit[i]:pv->get_current_dimension()))
+      {
+          xyo->traceSize[i] = (int) pv->get_current_dimension();
+          xyo->needArraySizeChange = 1;
+          xyo->actWin->addDefExeNode( xyo->aglPtr );
+      }
       if ( xyo->plotUpdateMode[i] != XYGC_K_UPDATE_ON_TRIG ) {
 
         xyo->yArrayNeedUpdate[i] = 1;
@@ -3235,7 +3248,7 @@ int ctl;
 
   case XYGC_K_TRACE_CHRONOLOGICAL:
 
-    if ( xyo->forceVector[i] || ( xyo->yPvCount[i] > 1 ) ) { // vector
+    if ( xyo->forceVector[i] || ( xyo->yPvDim[i] > 1 ) ) { // vector
 
       for ( ii=0; ii<xyo->yPvCount[i]; ii++ ) {
 
@@ -3367,6 +3380,13 @@ int ctl;
         dxValue = (double) ii;
         ( (double *) xyo->xPvData[i] )[ii] = dxValue;
 
+      }
+
+      if (xyo->traceSize[i] != ((xyo->traceSizeLimit[i] > 0 && pv->get_current_dimension()>xyo->traceSizeLimit[i])?xyo->traceSizeLimit[i]:pv->get_current_dimension()))
+      {
+          xyo->traceSize[i] = (int) pv->get_current_dimension();
+          xyo->needArraySizeChange = 1;
+          xyo->actWin->addDefExeNode( xyo->aglPtr );
       }
 
       if ( xyo->plotUpdateMode[i] != XYGC_K_UPDATE_ON_TRIG ) {
@@ -3988,7 +4008,21 @@ time_t t1, t2;
     y2Scale[i] = 0;
     lineStyle[i] = LineSolid;
     needNPvConnect[i] = 0;
+    traceSizeLimit[i]=0;
+    traceSize[i]=0;
   }
+  needConnect = needInit = needRefresh = needUpdate = needErase = needDraw =
+  needResetConnect = needReset = needTrigConnect = needTrig =
+  needTraceCtlConnect = needTraceUpdate = needXRescale =
+  needY2Rescale = needBufferScroll = needVectorUpdate =
+  needRealUpdate = needBoxRescale = needNewLimits = needOriginalLimits =
+  needAutoScaleUpdate = needNConnect = needNInit = needArraySizeChange = 0;
+  for (i=0; i<NUM_Y_AXES; i++) {
+    for (int j=0; j<XYGC_K_MAX_TRACES; j++ ) {
+      y1Factor[i][j]=y1Offset[i][j]=0;
+    }
+    curY1Min[i]=curY1Max[i]=adjCurY1Min[i]=adjCurY1Max[i]=curY1NumLabelTicks[i]=0;
+  } 
   trigPv = NULL;
   resetPv = NULL;
   traceCtlPv = NULL;
@@ -7294,7 +7328,7 @@ int ctl;
 
     yArrayNeedUpdate[i] = xArrayNeedUpdate[i] = 0;
 
-    if ( forceVector[i] || ( yPvCount[i] > 1 ) ) { // vector
+    if ( forceVector[i] || ( yPvDim[i] > 1 ) ) { // vector
 
       npts = fillVectorPlotArray( i );
 
@@ -8102,6 +8136,7 @@ XmString str;
         totalCount[i] = 0;
         needNPvConnect[i] = 0;
         traceSize[i] = 0;
+        traceSizeLimit[i] = 0;
         xPvCount[i] = 0;
         yPvCount[i] = 0;
         xPvSize[i] = 0;
@@ -9135,13 +9170,15 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
           yPvCount[i] = (int) yPv[i]->get_dimension();
           yPvDim[i] = (int) yPv[i]->get_dimension();
 
+          if ( traceSizeLimit[i] < 0 ) traceSizeLimit[i] = 0;
           if ( traceSize[i] < 0 ) traceSize[i] = 0;
 
-          if ( traceSize[i] > yPvDim[i] ) {
+          if ( traceSizeLimit[i] > yPvDim[i] ) {
             yPvCount[i] = yPvDim[i];
           }
-          else if ( traceSize[i] > 0 ) {
-            yPvCount[i] = traceSize[i];
+          else if ( traceSizeLimit[i] > 0) {
+            yPvCount[i] = traceSizeLimit[i];
+            traceSize[i] = traceSizeLimit[i];
           }
 
           yPvSize[i] = yPvDim[i] * (int) yPv[i]->get_specific_type().size / 8;
@@ -9169,12 +9206,14 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
           xPvDim[i] = (int) xPv[i]->get_dimension();
 
           if ( traceSize[i] < 0 ) traceSize[i] = 0;
+          if ( traceSizeLimit[i] < 0 ) traceSizeLimit[i] = 0;
 
-          if ( traceSize[i] > xPvDim[i] ) {
+          if ( traceSizeLimit[i] > xPvDim[i] ) {
             xPvCount[i] = xPvDim[i];
           }
-          else if ( traceSize[i] > 0 ) {
-            xPvCount[i] = traceSize[i];
+          else if ( traceSizeLimit[i] > 0 ) {
+            xPvCount[i] = traceSizeLimit[i];
+            traceSize[i] = traceSizeLimit[i];
           }
 
           xPvSize[i] = xPvDim[i] * (int) xPv[i]->get_specific_type().size / 8;
@@ -9249,7 +9288,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
            ( ( plotStyle[i] == XYGC_K_PLOT_STYLE_LINE ) ||
              ( plotStyle[i] == XYGC_K_PLOT_STYLE_POINT ) ) &&
            ( traceType[i] == XYGC_K_TRACE_CHRONOLOGICAL ) &&
-           ( !forceVector[i] && ( yPvCount[i] == 1 ) ) && // must be scalar; use y here,
+           ( !forceVector[i] && ( yPvDim[i] == 1 ) ) && // must be scalar; use y here,
                                    // x is not used for chonological
            ( ( xAxisStyle == XYGC_K_AXIS_STYLE_LINEAR ) ||
              ( xAxisStyle == XYGC_K_AXIS_STYLE_LOG10 ) )
@@ -9302,7 +9341,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
 
         if ( !yPvData[i] ) {
 
-          if ( forceVector[i] || ( yPvCount[i] > 1 ) ) { // vector
+          if ( forceVector[i] || ( yPvDim[i] > 1 ) ) { // vector
 
             maxDim = yPvDim[i];
             if ( xPvDim[i] > maxDim ) maxDim = xPvDim[i];
@@ -9446,7 +9485,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
 
         if ( !xPvData[i] ) {
 
-          if ( forceVector[i] || ( xPvCount[i] > 1 ) ) { // vector
+          if ( forceVector[i] || ( xPvDim[i] > 1 ) ) { // vector
 
             xPvData[i] = (void *) new char[xPvSize[i]+80];
 
@@ -9499,7 +9538,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
         }
         else if ( traceType[i] == XYGC_K_TRACE_CHRONOLOGICAL ) {
 
-          if ( forceVector[i] || ( yPvCount[i] > 1 ) ) { // vector
+          if ( forceVector[i] || ( yPvDim[i] > 1 ) ) { // vector
 
             if ( initialYConnection[i] ) {
 
@@ -9588,7 +9627,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
         xArrayNeedUpdate[i] = 1;
       }
 
-      if ( forceVector[i] || ( yPvCount[i] > 1 ) ) {
+      if ( forceVector[i] || ( yPvDim[i] > 1 ) ) {
 
         if ( traceType[i] == XYGC_K_TRACE_CHRONOLOGICAL ) {
 
@@ -11205,6 +11244,7 @@ int autoScaleX=0, autoScaleY[NUM_Y_AXES];
 
     for ( i=0; i<numTraces; i++ ) {
 
+      if ( traceSizeLimit[i] > 0 && traceSizeLimit[i] < traceSize[i]) traceSize[i] = traceSizeLimit[i];
       if ( traceSize[i] < 0 ) traceSize[i] = 0;
 
       if ( traceSize[i] > yPvDim[i] ) {

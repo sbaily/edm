@@ -34,6 +34,7 @@ public:
     double      get_double() const;
     size_t      get_string(char *strbuf, size_t buflen) const;
     size_t      get_dimension() const;
+    size_t      get_current_dimension() const;    
     const char  *get_char_array() const;
     const short *get_short_array() const;
     const int   *get_int_array() const;
@@ -86,6 +87,7 @@ private:
     class PVValue *value;  // current value, type-dependent
     bool read_access;
     bool write_access;
+    size_t current_dimension;     // number of elements used by the current value
     
     static void ca_connect_callback(struct connection_handler_args arg);
     static void ca_ctrlinfo_callback(struct event_handler_args args);
@@ -120,7 +122,7 @@ public:
 	unsigned long get_nano();
 
     virtual void read_ctrlinfo(const void *buf) = 0;
-    virtual void read_value(const void *buf) = 0;
+    virtual void read_value(const void *buf,const size_t count) = 0;
 protected:
     friend class EPICS_ProcessVariable;
     EPICS_ProcessVariable *epv;
@@ -155,7 +157,7 @@ public:
     size_t      get_string(char *strbuf, size_t buflen) const;
     const int  *get_int_array() const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     int *value;
 };
@@ -171,7 +173,7 @@ public:
     double      get_double() const;
     const double *get_double_array() const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     double *value;
 };
@@ -187,7 +189,7 @@ public:
     size_t      get_enum_count() const;
     const char *get_enum(size_t i) const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     int    value;
     size_t enums;
@@ -204,7 +206,7 @@ public:
     double      get_double() const;
     size_t      get_string(char *strbuf, size_t buflen) const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     dbr_string_t value;
 };
@@ -221,7 +223,7 @@ public:
     const char * get_char_array() const;
     size_t      get_string(char *strbuf, size_t buflen) const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     char *value;
     size_t len;
@@ -239,7 +241,7 @@ public:
     const short *get_short_array() const;
     size_t      get_string(char *strbuf, size_t buflen) const;
     void read_ctrlinfo(const void *buf);
-    void read_value(const void *buf);
+    void read_value(const void *buf,const size_t count);
 private:
     short *value;
     size_t len;
